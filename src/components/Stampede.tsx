@@ -3,8 +3,69 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AppHeader } from "./AppHeader";
 import { BingoSquare } from "./BingoSquare";
-import { type AppState, THEMES } from "../types";
+import { type AppState, type Square, THEMES } from "../types";
 import LZString from "lz-string";
+import confetti from "canvas-confetti";
+
+const checkBingo = (grid: Square[]) => {
+  const size = 5; // 5x5 grid
+  const rows = Array(size)
+    .fill(0)
+    .map((_, i) =>
+      Array(size)
+        .fill(0)
+        .map((_, j) => i * size + j),
+    );
+  const cols = Array(size)
+    .fill(0)
+    .map((_, i) =>
+      Array(size)
+        .fill(0)
+        .map((_, j) => j * size + i),
+    );
+  const diag1 = [0, 6, 12, 18, 24];
+  const diag2 = [4, 8, 12, 16, 20];
+
+  const allLines = [...rows, ...cols, diag1, diag2];
+
+  for (const line of allLines) {
+    if (line.every((idx) => grid[idx].stampedIdx !== null)) {
+      return true; // We found a winner!
+    }
+  }
+  return false;
+};
+
+const fireFireworks = () => {
+  const duration = 5 * 1000;
+  const animationEnd = Date.now() + duration;
+  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+  const randomInRange = (min: number, max: number) =>
+    Math.random() * (max - min) + min;
+
+  const interval: any = setInterval(function () {
+    const timeLeft = animationEnd - Date.now();
+
+    if (timeLeft <= 0) {
+      return clearInterval(interval);
+    }
+
+    const particleCount = 50 * (timeLeft / duration);
+
+    // Fire two bursts from the sides
+    confetti({
+      ...defaults,
+      particleCount,
+      origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+    });
+    confetti({
+      ...defaults,
+      particleCount,
+      origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+    });
+  }, 250);
+};
 
 export default function Stampede({
   rows,
@@ -102,6 +163,48 @@ export default function Stampede({
     });
   };
 
+  const handleRandomize = () => {
+    setState((prev) => {
+      const shuffledGrid = [...prev.g].map((s) => ({ ...s, stampedIdx: null })); // Clear stamps
+
+      for (let i = shuffledGrid.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledGrid[i], shuffledGrid[j]] = [shuffledGrid[j], shuffledGrid[i]];
+      }
+
+      return { ...prev, v: (prev.v || 0) + 1, g: shuffledGrid };
+    });
+
+    toast({
+      title: "Board Randomized!",
+      description: "Stamps cleared for a new game.",
+    });
+  };
+
+  const handleStamp = (index: number, iconIdx: number) => {
+    setState((prev) => {
+      const newGrid = [...prev.g];
+
+      // Toggle logic
+      newGrid[index] = {
+        ...newGrid[index],
+        stampedIdx: newGrid[index].stampedIdx === iconIdx ? null : iconIdx,
+      };
+
+      // Check for Bingo!
+      if (checkBingo(newGrid)) {
+        fireFireworks();
+        toast({
+          title: "BINGO! 🎉",
+          description: "Your team has completed a line! Keep going!",
+          className: "bg-green-500 text-white border-none shadow-2xl",
+        });
+      }
+
+      return { ...prev, g: newGrid };
+    });
+  };
+
   return (
     <div className={`min-h-screen py-10 px-4 ${currentTheme.text}`}>
       <div className="max-w-4xl mx-auto space-y-8">
@@ -112,6 +215,7 @@ export default function Stampede({
           onToggleLock={() => setIsLocked(!isLocked)}
           onUpdateName={(n) => setState({ ...state, n })}
           onUpdateTheme={(t) => setState({ ...state, t })}
+          onRandomize={handleRandomize}
           onReset={() => {
             setState((prevState) => ({
               ...prevState,
@@ -142,12 +246,7 @@ export default function Stampede({
               isLocked={isLocked}
               onUpdateGoal={(newText) => handleUpdateGoal(i, newText)}
               borderClass={currentTheme.border}
-              onStamp={(iconIdx) => {
-                const newGrid = [...state.g];
-                newGrid[i].stampedIdx =
-                  newGrid[i].stampedIdx === iconIdx ? null : iconIdx;
-                setState({ ...state, g: newGrid });
-              }}
+              onStamp={(iconIdx) => handleStamp(i, iconIdx)}
             />
           ))}
         </div>

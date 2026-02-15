@@ -10,6 +10,7 @@ import { ICON_LIB, type Square } from "../types";
 import { useState } from "react";
 import { Edit3 } from "lucide-react";
 import { Input } from "./ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 interface BingoSquareProps {
   square: Square;
@@ -29,6 +30,7 @@ export const BingoSquare = ({
   const isStamped = square.stampedIdx !== null;
   const IconData = isStamped ? ICON_LIB[square.stampedIdx!] : null;
   const [isEditingText, setIsEditingText] = useState(false);
+  const { toast } = useToast();
 
   const renderGoalContent = () => {
     if (!isLocked && isEditingText) {
@@ -49,6 +51,15 @@ export const BingoSquare = ({
         <span
           onClick={(e) => {
             if (!isLocked) {
+              if (isStamped) {
+                toast({
+                  title: "Edit Locked",
+                  description:
+                    "Please clear the stamp before editing the goal.",
+                });
+                return;
+              }
+
               e.stopPropagation(); // Don't open popover if we're editing
               setIsEditingText(true);
             }

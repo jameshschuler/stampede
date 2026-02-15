@@ -8,6 +8,7 @@ import {
   Lock,
   Unlock,
   CheckCircle2,
+  Dices,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,8 @@ interface AppHeaderProps {
   onUpdateTheme: (idx: number) => void;
   onToggleLock: () => void;
   onReset: () => void;
-  onShare: () => void; // This will trigger the navigator.share in Stampede.tsx
+  onShare: () => void;
+  onRandomize: () => void;
 }
 
 export const AppHeader = ({
@@ -38,6 +40,7 @@ export const AppHeader = ({
   onToggleLock,
   onReset,
   onShare,
+  onRandomize,
 }: AppHeaderProps) => {
   const [isEditingName, setIsEditingName] = useState(false);
 
@@ -121,6 +124,16 @@ export const AppHeader = ({
               </div>
             </PopoverContent>
           </Popover>
+
+          <Button
+            onClick={onRandomize}
+            variant="ghost"
+            size="icon"
+            className="rounded-xl hover:bg-orange-50 hover:text-orange-500"
+            title="Randomize Board"
+          >
+            <Dices className="w-5 h-5" />
+          </Button>
 
           <Button
             onClick={onReset}
