@@ -17,32 +17,48 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { THEMES } from "../types";
+import { THEMES, type Square } from "../types";
+import { BulkEditDialog } from "./BulkEditDialog";
+import { Badge } from "./ui/badge";
 
 interface AppHeaderProps {
   teamName: string;
+  subtitle?: string;
   themeIdx: number;
   isLocked: boolean;
+  gridSize: number; // New: Derived from state.g.length
+  goals: Square[]; // New: Pass the grid state for bulk editing
   onUpdateName: (name: string) => void;
+  onUpdateSubtitle: (subtitle: string) => void;
   onUpdateTheme: (idx: number) => void;
   onToggleLock: () => void;
   onReset: () => void;
   onShare: () => void;
   onRandomize: () => void;
+  onResize: (size: number) => void;
+  onUpdateGoal: (index: number, val: string) => void; // New: For Bulk Edit
 }
 
 export const AppHeader = ({
   teamName,
+  subtitle,
   themeIdx,
   isLocked,
+  gridSize,
+  goals,
   onUpdateName,
   onUpdateTheme,
   onToggleLock,
   onReset,
   onShare,
   onRandomize,
+  onResize,
+  onUpdateGoal,
+  onUpdateSubtitle,
 }: AppHeaderProps) => {
   const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingSubtitle, setIsEditingSubtitle] = useState(false);
+  const currentTheme = THEMES[themeIdx];
 
   return (
     <header className="flex flex-col gap-6">
@@ -74,12 +90,40 @@ export const AppHeader = ({
           </p>
         </div>
 
-        {/* Mode Toggle - Very important for Mobile UX */}
+        <div className="flex items-center gap-2 mt-1">
+          {isEditingSubtitle ? (
+            <Input
+              autoFocus
+              className="h-6 text-[10px] w-32 font-bold uppercase py-0 px-2 bg-primary/10 border-primary"
+              value={subtitle || ""}
+              onChange={(e) => onUpdateSubtitle(e.target.value)}
+              onBlur={() => setIsEditingSubtitle(false)}
+              onKeyDown={(e) =>
+                e.key === "Enter" && setIsEditingSubtitle(false)
+              }
+            />
+          ) : (
+            <Badge
+              className={`cursor-pointer transition-all duration-300 text-[12px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md border-none shadow-sm shadow-black/5 ${currentTheme.badge}`}
+              onClick={() => setIsEditingSubtitle(true)}
+            >
+              {subtitle || "Add Edition +"}
+            </Badge>
+          )}
+          <p className="text-[10px] font-bold uppercase tracking-widest opacity-30 flex items-center gap-1">
+            • Step Bingo
+          </p>
+        </div>
+
         <Button
           variant={isLocked ? "outline" : "default"}
           size="sm"
           onClick={onToggleLock}
-          className={`gap-2 rounded-full h-9 px-4 transition-all ${!isLocked ? "bg-orange-500 hover:bg-orange-600 border-none" : "bg-white/50"}`}
+          className={`gap-2 rounded-full h-9 px-4 transition-all ${
+            !isLocked
+              ? "bg-orange-500 hover:bg-orange-600 border-none shadow-md"
+              : "bg-white/50"
+          }`}
         >
           {isLocked ? (
             <Lock className="w-3.5 h-3.5" />
@@ -92,9 +136,10 @@ export const AppHeader = ({
         </Button>
       </div>
 
-      {/* Bottom Row: Theme, Reset, Share */}
-      <div className="flex items-center justify-between bg-white/20 p-2 rounded-2xl backdrop-blur-sm border border-white/20">
+      {/* Bottom Row: Toolbelt */}
+      <div className="flex flex-wrap items-center justify-between bg-white/20 p-2 rounded-2xl backdrop-blur-sm border border-white/20 gap-2">
         <div className="flex items-center gap-1">
+          {/* Theme Palette */}
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -125,29 +170,61 @@ export const AppHeader = ({
             </PopoverContent>
           </Popover>
 
-          <Button
-            onClick={onRandomize}
-            variant="ghost"
-            size="icon"
-            className="rounded-xl hover:bg-orange-50 hover:text-orange-500"
-            title="Randomize Board"
-          >
-            <Dices className="w-5 h-5" />
-          </Button>
+          {/* Setup Tools (Only show when unlocked) */}
+          {!isLocked && (
+            <>
+              <div className="h-6 w-[1px] bg-black/10 mx-1" />
 
+              {/* Grid Size Selectors */}
+              <div className="flex items-center gap-1 bg-black/5 rounded-lg p-0.5">
+                {[3, 4, 5].map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => onResize(size)}
+                    className={`text-[10px] font-bold w-7 h-7 rounded-md transition-all ${
+                      gridSize === size
+                        ? "bg-white text-primary shadow-sm scale-105"
+                        : "text-black/40 hover:text-black"
+                    }`}
+                  >
+                    {size}x{size}
+                  </button>
+                ))}
+              </div>
+
+              <BulkEditDialog goals={goals} onUpdate={onUpdateGoal} />
+
+              {/* Randomizer */}
+              <Button
+                onClick={onRandomize}
+                variant="ghost"
+                size="icon"
+                className="rounded-xl hover:bg-orange-50 hover:text-orange-500"
+                title="Randomize Board"
+              >
+                <Dices className="w-5 h-5" />
+              </Button>
+            </>
+          )}
+
+          <div className="h-6 w-[1px] bg-black/10 mx-1" />
+
+          {/* Reset Button */}
           <Button
             onClick={onReset}
             variant="ghost"
             size="icon"
             className="rounded-xl hover:bg-red-50 hover:text-red-500"
+            title="Reset All"
           >
             <RotateCcw className="w-5 h-5" />
           </Button>
         </div>
 
+        {/* Share Button */}
         <Button
           onClick={onShare}
-          className="gap-2 rounded-xl px-5 font-bold shadow-lg"
+          className="gap-2 rounded-xl px-5 font-bold shadow-lg transition-transform active:scale-95"
         >
           <Share2 className="w-4 h-4" /> Share
         </Button>

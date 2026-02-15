@@ -35,54 +35,63 @@ export const THEMES = [
     bg: "bg-slate-50",
     text: "text-slate-900",
     border: "border-slate-200",
+    badge: "bg-slate-900 text-white hover:bg-slate-800", // Stark contrast
   },
   {
     name: "Rose",
     bg: "bg-rose-50",
     text: "text-rose-900",
     border: "border-rose-200",
+    badge: "bg-teal-500 text-white hover:bg-teal-600", // Complementary to Pink
   },
   {
     name: "Sky",
     bg: "bg-sky-50",
     text: "text-sky-900",
     border: "border-sky-200",
+    badge: "bg-orange-500 text-white hover:bg-orange-600", // Complementary to Blue
   },
   {
     name: "Mint",
     bg: "bg-emerald-50",
     text: "text-emerald-900",
     border: "border-emerald-200",
+    badge: "bg-rose-500 text-white hover:bg-rose-600", // Complementary to Green
   },
   {
     name: "Lemon",
     bg: "bg-amber-50",
     text: "text-amber-900",
     border: "border-amber-200",
+    badge: "bg-violet-600 text-white hover:bg-violet-700", // Complementary to Yellow
   },
   {
     name: "Lavender",
     bg: "bg-violet-50",
     text: "text-violet-900",
     border: "border-violet-200",
+    badge: "bg-lime-500 text-black hover:bg-lime-600", // Complementary to Purple
   },
   {
     name: "Sage",
     bg: "bg-green-50",
     text: "text-green-900",
     border: "border-green-200",
+    badge: "bg-fuchsia-600 text-white hover:bg-fuchsia-700", // Complementary to Green
   },
   {
     name: "Sunset",
     bg: "bg-orange-50",
     text: "text-orange-900",
     border: "border-orange-200",
+    badge: "bg-blue-600 text-white hover:bg-blue-700", // Complementary to Orange
   },
   {
     name: "Storm",
     bg: "bg-blue-100/50",
     text: "text-blue-900",
     border: "border-blue-300",
+    badge: "bg-yellow-400 text-blue-900 hover:bg-yellow-500", // High-vis yellow on blue
   },
 ];
 
@@ -93,6 +102,7 @@ export interface Square {
 
 export interface AppState {
   n: string;
+  s?: string;
   g: Square[];
   t: number;
   v: number;

@@ -8,32 +8,36 @@ import LZString from "lz-string";
 import confetti from "canvas-confetti";
 
 const checkBingo = (grid: Square[]) => {
-  const size = 5; // 5x5 grid
-  const rows = Array(size)
-    .fill(0)
-    .map((_, i) =>
-      Array(size)
-        .fill(0)
-        .map((_, j) => i * size + j),
-    );
-  const cols = Array(size)
-    .fill(0)
-    .map((_, i) =>
-      Array(size)
-        .fill(0)
-        .map((_, j) => j * size + i),
-    );
-  const diag1 = [0, 6, 12, 18, 24];
-  const diag2 = [4, 8, 12, 16, 20];
+  const size = Math.sqrt(grid.length);
+  const lines: number[][] = [];
 
-  const allLines = [...rows, ...cols, diag1, diag2];
-
-  for (const line of allLines) {
-    if (line.every((idx) => grid[idx].stampedIdx !== null)) {
-      return true; // We found a winner!
-    }
+  // 1. Rows
+  for (let i = 0; i < size; i++) {
+    const row = [];
+    for (let j = 0; j < size; j++) row.push(i * size + j);
+    lines.push(row);
   }
-  return false;
+
+  // 2. Columns
+  for (let i = 0; i < size; i++) {
+    const col = [];
+    for (let j = 0; j < size; j++) col.push(j * size + i);
+    lines.push(col);
+  }
+
+  // 3. Diagonals
+  const diag1 = [];
+  const diag2 = [];
+  for (let i = 0; i < size; i++) {
+    diag1.push(i * size + i);
+    diag2.push(i * size + (size - 1 - i));
+  }
+  lines.push(diag1, diag2);
+
+  // Check if any line is fully stamped
+  return lines.some((line) =>
+    line.every((idx) => grid[idx].stampedIdx !== null),
+  );
 };
 
 const fireFireworks = () => {
@@ -205,16 +209,52 @@ export default function Stampede({
     });
   };
 
+  const gridSize = Math.sqrt(state.g.length);
+
+  const handleResize = (newSize: number) => {
+    setState((prev) => {
+      const total = newSize * newSize;
+      let newGrid = [...prev.g];
+
+      if (newGrid.length > total) {
+        newGrid = newGrid.slice(0, total);
+      } else {
+        const extra = Array.from(
+          { length: total - newGrid.length },
+          (_, i) => ({
+            goal: `${(newGrid.length + i + 1) * 1000} Steps`,
+            stampedIdx: null,
+          }),
+        );
+        newGrid = [...newGrid, ...extra];
+      }
+      return { ...prev, g: newGrid, v: (prev.v || 0) + 1 };
+    });
+  };
+
+  const handleUpdateSubtitle = (newSubtitle: string) => {
+    setState((prev) => ({
+      ...prev,
+      s: newSubtitle,
+    }));
+  };
+
   return (
     <div className={`min-h-screen py-10 px-4 ${currentTheme.text}`}>
       <div className="max-w-4xl mx-auto space-y-8">
         <AppHeader
+          gridSize={gridSize}
+          goals={state.g}
+          onUpdateGoal={handleUpdateGoal}
           teamName={state.n}
+          subtitle={state.s}
           themeIdx={state.t}
           isLocked={isLocked}
+          onResize={handleResize}
           onToggleLock={() => setIsLocked(!isLocked)}
           onUpdateName={(n) => setState({ ...state, n })}
           onUpdateTheme={(t) => setState({ ...state, t })}
+          onUpdateSubtitle={handleUpdateSubtitle}
           onRandomize={handleRandomize}
           onReset={() => {
             setState((prevState) => ({
@@ -237,7 +277,7 @@ export default function Stampede({
         />
         <div
           className="grid gap-3 sm:gap-4"
-          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
         >
           {state.g.map((square, i) => (
             <BingoSquare
