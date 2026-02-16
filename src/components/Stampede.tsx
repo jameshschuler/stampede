@@ -7,6 +7,28 @@ import { type AppState, type Square, THEMES } from "../types";
 import LZString from "lz-string";
 import confetti from "canvas-confetti";
 
+const packState = (state: AppState) => ({
+  n: state.n,
+  s: state.s,
+  t: state.t,
+  g: state.g.map((sq) => ({
+    l: sq.goal,
+    x: sq.stampedIdx,
+  })),
+});
+
+// Restore the object after decompression
+const unpackState = (min: any): AppState => ({
+  n: min.n,
+  s: min.s,
+  t: min.t,
+  g: min.g.map((sq: any) => ({
+    goal: sq.l,
+    stampedIdx: sq.x,
+  })),
+  v: 0, // Default version
+});
+
 const checkBingo = (grid: Square[]) => {
   const size = Math.sqrt(grid.length);
   const lines: number[][] = [];
@@ -89,7 +111,9 @@ export default function Stampede({
         // Decompress the URL data
         const decompressed =
           LZString.decompressFromEncodedURIComponent(compressed);
-        if (decompressed) return JSON.parse(decompressed);
+        if (decompressed) {
+          return unpackState(JSON.parse(decompressed));
+        }
       } catch (e) {
         console.error("Failed to decompress URL data", e);
       }
@@ -117,8 +141,9 @@ export default function Stampede({
 
     // 2. Debounce the URL update so it doesn't lag the text input
     const timeoutId = setTimeout(() => {
+      const packed = packState(state);
       const compressed = LZString.compressToEncodedURIComponent(
-        JSON.stringify(state),
+        JSON.stringify(packed),
       );
       const url = new URL(window.location.href);
       url.searchParams.set("d", compressed);
