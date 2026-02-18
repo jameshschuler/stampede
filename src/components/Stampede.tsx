@@ -301,7 +301,7 @@ export default function Stampede({
           onShare={handleShare}
         />
         <div
-          className="grid gap-3 sm:gap-4"
+          className="grid gap-2 sm:gap-4"
           style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
         >
           {state.g.map((square, i) => (
