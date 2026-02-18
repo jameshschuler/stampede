@@ -64,7 +64,7 @@ export const BingoSquare = ({
               setIsEditingText(true);
             }
           }}
-          className={`text-[9px] sm:text-xs font-black uppercase text-center leading-[1.1] transition-opacity break-all hyphens-auto
+          className={`text-[9px] sm:text-xs uppercase text-center leading-[1.1] transition-opacity break-word
           ${isLocked ? "opacity-70" : "opacity-100 underline decoration-dotted decoration-orange-400"}
         `}
         >
