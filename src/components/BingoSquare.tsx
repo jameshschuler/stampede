@@ -8,9 +8,9 @@ import {
 } from "@/components/ui/popover";
 import { ICON_LIB, type Square } from "../types";
 import { useState } from "react";
-import { Edit3 } from "lucide-react";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Edit3 } from "lucide-react";
 
 interface BingoSquareProps {
   square: Square;
@@ -37,7 +37,7 @@ export const BingoSquare = ({
       return (
         <Input
           autoFocus
-          className="text-[10px] sm:text-xs h-auto p-2 text-center bg-white/90 border-primary font-bold px-2"
+          className="text-[10px] sm:text-xs h-auto p-2 text-center bg-white/90 border-primary font-bold px-2 z-20"
           value={square.goal}
           onChange={(e) => onUpdateGoal(e.target.value)}
           onBlur={() => setIsEditingText(false)}
@@ -47,7 +47,10 @@ export const BingoSquare = ({
     }
 
     return (
-      <div className="relative flex flex-col items-center justify-center w-full">
+      <div
+        className={`relative flex flex-col items-center justify-center w-full transition-opacity duration-300 
+        ${isStamped ? "opacity-30 blur-[0.5px]" : "opacity-100"}`}
+      >
         <span
           onClick={(e) => {
             if (!isLocked) {
@@ -59,81 +62,79 @@ export const BingoSquare = ({
                 });
                 return;
               }
-
-              e.stopPropagation(); // Don't open popover if we're editing
+              e.stopPropagation();
               setIsEditingText(true);
             }
           }}
-          className={`text-[9px] sm:text-xs uppercase text-center leading-[1.1] transition-opacity break-word
-          ${isLocked ? "opacity-70" : "opacity-100 underline decoration-dotted decoration-orange-400"}
+          className={`text-[9px] sm:text-xs uppercase text-center font-bold leading-[1.1] break-words px-1
+          ${!isLocked ? "underline decoration-dotted decoration-orange-400 cursor-edit" : ""}
         `}
         >
           {square.goal}
         </span>
 
-        {/* Visual hint for "Edit Mode" */}
-        {!isLocked && !isEditingText && (
+        {/* Edit icon only shows when not locked and not stamped */}
+        {!isLocked && !isEditingText && !isStamped && (
           <Edit3 className="w-3 h-3 text-orange-500 mt-1 opacity-50" />
         )}
       </div>
     );
   };
 
-  const CardContent = (
-    <Card
-      className={`
+  // Reusable content for the Card
+  const CardInner = (
+    <>
+      {renderGoalContent()}
+
+      {/* Icon Layer: Positioned absolutely to sit on top of the text */}
+      {IconData && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <IconData.icon
+            className={`w-10 h-10 sm:w-14 sm:h-14 animate-in zoom-in spin-in-3 duration-300 drop-shadow-md ${IconData.color}`}
+          />
+        </div>
+      )}
+    </>
+  );
+
+  const cardClasses = `
     aspect-square flex flex-col items-center justify-center p-2 cursor-pointer 
     transition-all duration-300 border-2 relative overflow-hidden active:scale-95
     ${
       isStamped
-        ? `${IconData?.bg} border-primary shadow-md`
+        ? `${IconData?.bg} border-primary shadow-inner`
         : `bg-white/40 border-dashed ${borderClass} ${!isLocked ? "border-orange-300 bg-orange-50/30" : "hover:border-primary/50"}`
     }
-  `}
-    >
-      {renderGoalContent()}
-      {IconData && (
-        <IconData.icon
-          className={`w-8 h-8 sm:w-12 sm:h-12 mt-2 animate-in zoom-in duration-300 ${IconData.color}`}
-        />
-      )}
-    </Card>
-  );
+  `;
 
+  // If the board isn't locked, we just show the card (Edit Mode)
   if (!isLocked) {
-    return CardContent;
+    return <Card className={cardClasses}>{CardInner}</Card>;
   }
 
+  // If locked, wrap in Popover for stamping
   return (
     <Popover>
-      {/* Popover only triggers if we are in Locked (Stamping) mode */}
-      <PopoverTrigger asChild disabled={!isLocked}>
-        <Card
-          className={`
-          aspect-square flex flex-col items-center justify-center p-2 cursor-pointer 
-          transition-all duration-300 border-2 relative overflow-hidden active:scale-95
-          ${
-            isStamped
-              ? `${IconData?.bg} border-primary shadow-md`
-              : `bg-white/40 border-dashed ${borderClass} ${!isLocked ? "border-orange-300 bg-orange-50/30" : "hover:border-primary/50"}`
-          }
-        `}
-        >
-          {renderGoalContent()}
-
-          {IconData && (
-            <IconData.icon
-              className={`w-8 h-8 sm:w-12 sm:h-12 mt-2 animate-in zoom-in duration-300 ${IconData.color}`}
-            />
-          )}
-        </Card>
+      <PopoverTrigger asChild>
+        <Card className={cardClasses}>{CardInner}</Card>
       </PopoverTrigger>
 
-      {/* The Icon Selection Menu */}
       <PopoverContent className="w-64 p-3 shadow-2xl rounded-2xl border-2">
-        <p className="text-[10px] font-black uppercase mb-3 opacity-40 tracking-widest text-center">
-          Choose Your Stamp
-        </p>
+        <div className="flex justify-between items-center mb-3">
+          <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">
+            Stamp Square
+          </p>
+          {isStamped && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[9px] text-red-500 hover:text-red-700 hover:bg-red-50"
+              onClick={() => onStamp(null as any)} // Assuming your onStamp handles null/clearing
+            >
+              Clear
+            </Button>
+          )}
+        </div>
         <div className="grid grid-cols-4 gap-2">
           {ICON_LIB.map((item, idx) => (
             <Button
@@ -141,7 +142,7 @@ export const BingoSquare = ({
               variant="ghost"
               className={`h-12 p-0 rounded-xl transition-transform active:scale-90 ${
                 square.stampedIdx === idx
-                  ? "bg-accent shadow-inner"
+                  ? "bg-accent shadow-inner ring-2 ring-primary/20"
                   : "hover:bg-slate-100"
               }`}
               onClick={() => onStamp(idx)}
